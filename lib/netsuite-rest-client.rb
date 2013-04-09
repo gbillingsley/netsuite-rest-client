@@ -213,7 +213,7 @@ module Netsuite
       if !parsed.first || parsed.flatten.include?("UNEXPECTED_ERROR")
         raise "Error processing request: #{parsed.last.to_s}"
       else
-        parsed.last
+        parsed
       end
     end
 
@@ -226,7 +226,7 @@ module Netsuite
           hash
         end
       else
-        data.to_s
+        data = data === false ? data = "F" : (data === true ? data = "T" : data.to_s)
       end
     end
 

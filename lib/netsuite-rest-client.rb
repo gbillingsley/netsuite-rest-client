@@ -2,7 +2,8 @@ require 'rest-client'
 require 'json'
 require 'uri'
 
-BASE_URL                      = "https://rest.netsuite.com/app/site/hosting/restlet.nl"
+BASE_URL_PATH                 = "/app/site/hosting/restlet.nl"
+DEFAULT_URL_DOMAIN            = "https://rest.netsuite.com"
 DEFAULT_SCRIPT_ID             = 13
 DEFAULT_DEPLOY_ID             = 1
 DEFAULT_GET_RECORD_BATCH_SIZE = 10000
@@ -16,7 +17,7 @@ DEFAULT_TRANSFORM_BATCH_SIZE  = 10
 module Netsuite
   class Client
 
-    attr_accessor :headers, :request_timeout, :rest_script_id,
+    attr_accessor :base_url, :headers, :request_timeout, :rest_script_id,
                   :search_script_id, :rest_deploy_id, :search_deploy_id
 
     def initialize(account_id, login, password, role_id, options={})
@@ -41,8 +42,16 @@ module Netsuite
       @search_batch_size     = options[:search_batch_size]     || DEFAULT_SEARCH_BATCH_SIZE
 
       @retry_limit = options[:retry_limit] || DEFAULT_RETRY_LIMIT
+      
+      @base_url = get_rest_url(account_id) + BASE_URL_PATH
     end
 
+    def get_rest_url(account_id)
+      @base_url = DEFAULT_URL_DOMAIN + '/rest/roles'
+      rest_roles = parse_json_result_from_rest(:get, Hash.new)
+      rest_roles[0][:dataCenterURLs][:restDomain]
+    end
+    
     def initialize_record(record_type)
       params = { 'script'      => @script_id,
                  'deploy'      => @deploy_id,
@@ -231,7 +240,7 @@ module Netsuite
     end
 
     def create_url(params)
-      BASE_URL + '?' + params.map { |key, value| "#{key}=#{value}" }.join('&')
+      @base_url + '?' + params.map { |key, value| "#{key}=#{value}" }.join('&')
     end
 
     def retryable(tries, exception, &block)
